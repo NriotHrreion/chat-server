@@ -4,6 +4,12 @@ By NriotHrreion
 
 ## 使用
 
+下载依赖
+
+```
+npm install
+```
+
 运行服务器
 
 ```
