@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="NriotHrreion">
+    <title>聊天室</title>
+    <style>
+        input[type=text] {
+            outline: none;
+        }
+        .info {
+            color: #ccc;
+            font-style: italic;
+        }
+        .err {
+            color: brown;
+            font-style: italic;
+        }
+        #main {
+            display: none;
+        }
+        #message {
+            width: 25%;
+        }
+        #chat {
+            width: 50%;
+            height: 350px;
+            margin-top: 15px;
+            padding: 7px;
+            overflow-y: auto;
+            border: 1px rgb(177, 177, 177) solid;
+            border-radius: 1px;
+        }
+        .upload-image {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="login">
+        昵称: <input type="text" id="username" autocomplete="off">
+    </div>
+    <div id="main">
+        <input type="text" id="message" placeholder="键入信息..." autocomplete="off">
+        <button id="send">发送</button>
+        <button id="image">图片</button>
+        <div id="chat"></div>
+    </div>
+    <input type="file" class="upload-image" id="upload-image" accept="image/*">
+    <script>
+        var nameinput = document.getElementById("username");
+        var msgbox = document.getElementById("message");
+        var imagebtn = document.getElementById("image");
+        var upload = document.getElementById("upload-image");
+        var chat = document.getElementById("chat");
+
+        var ws;
+        var username = "";
+
+        msgbox.onchange = function() {
+            ws.send(JSON.stringify({
+                type: "message",
+                user: username,
+                message: this.value
+            }));
+            this.value = "";
+            this.focus();
+        };
+
+        upload.onchange = function() {
+            var image = this.files[0];
+            
+            if(/^image/.test(image.type)) {
+                var fr = new FileReader();
+                fr.readAsDataURL(image);
+                fr.onload = () => {
+                    ws.send(JSON.stringify({
+                        type: "image",
+                        user: username,
+                        src: fr.result
+                    }));
+                    this.files = [];
+                };
+            }
+        };
+
+        imagebtn.onclick = function() {
+            upload.click();
+        };
+
+        nameinput.onchange = function() {
+            username = nameinput.value;
+
+            document.getElementById("main").style.display = "block";
+            document.getElementById("login").style.display = "none";
+            msgbox.focus();
+
+            ws = new WebSocket("ws://"+ window.location.hostname +":3500");
+            ws.onopen = function() {info("Server Connected");};
+            ws.onclose = function() {info("Server Closed")};
+            ws.onmessage = function(msg) {
+                var data_obj = JSON.parse(msg.data);
+                switch(data_obj.type) {
+                    case "message":
+                        message(data_obj.message);
+                        break;
+                    case "image":
+                        image(data_obj.message);
+                        break;
+                    case "withdraw":
+                        document.getElementById(data_obj.id).remove();
+                        break;
+                }
+            };
+            ws.onerror = function(err) {erri("Server ERROR: "+ err.currentTarget.url +" connect failed")};
+        };
+        
+        function message(text) {
+            var m = document.createElement("span");
+            m.id = document.querySelectorAll("span").length != 0 ? (document.querySelectorAll("span").length + 1).toString() : "1";
+
+            var t = document.createElement("label");
+            t.innerText = text;
+            m.appendChild(t);
+
+            m.appendChild(document.createElement("br"));
+            chat.appendChild(m);
+
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function image(text) {
+            var m = document.createElement("span");
+            m.id = document.querySelectorAll("span").length != 0 ? (document.querySelectorAll("span").length + 1).toString() : "1";
+
+            var t = document.createElement("label");
+            t.innerHTML = text;
+            m.appendChild(t);
+
+            m.appendChild(document.createElement("br"));
+            chat.appendChild(m);
+
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function info(text) {
+            var m = document.createElement("p");
+            m.innerHTML = text;
+            m.className = "info";
+            chat.appendChild(m);
+        }
+
+        function erri(text) {
+            var m = document.createElement("p");
+            m.innerHTML = text;
+            m.className = "err";
+            chat.appendChild(m);
+        }
+
+        function withdraw(id) {
+            ws.send(JSON.stringify({type: "withdraw", id: id}));
+        }
+    </script>
+</body>
+</html>
