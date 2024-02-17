@@ -1,6 +1,12 @@
 # Chat Server
 
+## `This Repo Has Been Archived`
+
 By NriotHrreion
+
+## NOTICE
+
+**我制作了一个升级版聊天室[Chatty](https://github.com/nocpiun/chatty-frontend)，欢迎参观！**
 
 ## 使用
 
